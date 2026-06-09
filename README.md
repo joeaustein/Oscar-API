@@ -90,5 +90,5 @@ curl http://localhost:8080/filme.json
 
 ## Banco de Dados e Dados de Teste
 O banco `oscar.db` é criado automaticamente. Usuários pré-cadastrados:
-- Logins: `user1`, `user2`, `user3`, `user4`, `user5` (Senhas: `pass1` a `pass5`)
+- Logins: `user1` até `user20` (Senhas: `pass1` até `pass20`)
 - **Massa de Teste:** O `user1` já possui um voto registrado para validar a regra de unicidade.

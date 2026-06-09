@@ -48,18 +48,10 @@ object DatabaseFactory {
         if (rs.next() && rs.getInt(1) == 0) {
             val insertUser = conn.prepareStatement("INSERT INTO usuarios (login, senha) VALUES (?, ?)")
             
-            // 5 users
-            val users = listOf(
-                "user1" to "pass1",
-                "user2" to "pass2",
-                "user3" to "pass3",
-                "user4" to "pass4",
-                "user5" to "pass5"
-            )
-            
-            users.forEach { (login, senha) ->
-                insertUser.setString(1, login)
-                insertUser.setString(2, senha)
+            // 20 users
+            for (i in 1..20) {
+                insertUser.setString(1, "user$i")
+                insertUser.setString(2, "pass$i")
                 insertUser.executeUpdate()
             }
 
