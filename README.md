@@ -1,6 +1,6 @@
 # Oscar API
 
-API REST desenvolvida para o projeto Oscar App (DS151). O sistema gerencia a autenticação de usuários, geração de tokens de segurança e o registro definitivo de votos para Filme e Diretor.
+API REST desenvolvida para o projeto Oscar App (DS151). O sistema gerencia a autenticação de usuários, geração de tokens de segurança, listagem de candidatos e o registro definitivo de votos.
 
 ## Tecnologias
 - **Linguagem:** [Kotlin](https://kotlinlang.org/)
@@ -31,39 +31,34 @@ Valida as credenciais e gera um token único para a sessão de votação.
 
 - **URL:** `/auth/login`
 - **Método:** `POST`
-- **Corpo (JSON):**
-  ```json
-  {
-    "login": "user2",
-    "senha": "pass2"
-  }
-  ```
-- **Resposta de Sucesso (200 OK):**
-  ```json
-  {
-    "success": true,
-    "usuarioId": 2,
-    "token": 87
-  }
-  ```
+- **Respostas:**
+  - **200 OK:** Login realizado com sucesso.
+    ```json
+    { "success": true, "usuarioId": 2, "token": 87 }
+    ```
+  - **401 Unauthorized:** Login ou senha incorretos.
+  - **400 Bad Request:** JSON inválido ou campos ausentes.
 
-### 2. Registrar Voto
-Registra a escolha do usuário. O token deve ser o mesmo recebido no login.
+### 2. Listagem de Dados (Arquivos Estáticos)
+Fornece os dados para as telas de votação do App Android.
+
+- **Filmes:** `GET /filme.json`
+- **Diretores:** `GET /diretor.json`
+
+### 3. Registrar Voto
+Registra a escolha do usuário no banco de dados.
 
 - **URL:** `/voto`
 - **Método:** `POST`
 - **Corpo (JSON):**
   ```json
-  {
-    "usuarioId": 2,
-    "filmeId": 10,
-    "diretorId": 5,
-    "token": 87
-  }
+  { "usuarioId": 2, "filmeId": 10, "diretorId": 5, "token": 87 }
   ```
 - **Respostas:**
-  - **Sucesso:** `{"success": true}`
-  - **Erro (Token Inválido/Já votou):** `{"success": false, "message": "Motivo do erro"}`
+  - **201 Created:** Voto registrado com sucesso.
+  - **403 Forbidden:** Token inválido.
+  - **409 Conflict:** Usuário já possui um voto registrado.
+  - **404 Not Found:** Usuário não encontrado.
 
 ---
 
@@ -81,23 +76,19 @@ curl -X POST http://localhost:8080/auth/login -H "Content-Type: application/json
 curl -X POST http://localhost:8080/voto -H "Content-Type: application/json" -d '{"usuarioId": 2, "filmeId": 1, "diretorId": 1, "token": SEU_TOKEN}'
 ```
 
+**Listar Filmes:**
+```bash
+curl http://localhost:8080/filme.json
+```
+
 ### Configuração para o App (Android)
 
-Para que o aplicativo Android consiga se comunicar com esta API, o endereço de conexão muda dependendo de onde o app está rodando:
-
-1. **No Emulador:**
-   - Use o endereço: `http://10.0.2.2:8080`
-   - O Android mapeia este IP especial para o `localhost` da sua máquina de desenvolvimento.
-
-2. **No Celular Físico:**
-   - O computador e o celular devem estar na **mesma rede Wi-Fi**.
-   - Descubra o IP do seu computador (use `ipconfig` no Windows).
-   - Use o endereço: `http://SEU_IP_AQUI:8080` (Ex: `http://192.168.1.15:8080`).
+1. **No Emulador:** Use o endereço: `http://10.0.2.2:8080`
+2. **No Celular Físico:** Use o endereço: `http://SEU_IP_AQUI:8080` (O computador e o celular devem estar na **mesma rede Wi-Fi**).
 
 ---
 
 ## Banco de Dados e Dados de Teste
-O banco `oscar.db` é criado automaticamente. Usuários pré-cadastrados (seed):
-- Logins: `user1`, `user2`, `user3`, `user4`, `user5`
-- Senhas: `pass1`, `pass2`, `pass3`, `pass4`, `pass5`
-- **Observação:** O `user1` já inicia com um voto registrado para teste de validação.
+O banco `oscar.db` é criado automaticamente. Usuários pré-cadastrados:
+- Logins: `user1`, `user2`, `user3`, `user4`, `user5` (Senhas: `pass1` a `pass5`)
+- **Massa de Teste:** O `user1` já possui um voto registrado para validar a regra de unicidade.

@@ -1,0 +1,20 @@
+[
+  {
+    "id": "1",
+    "nome": "Piratas do Caribe",
+    "genero": "Aventura",
+    "foto": "https://m.media-amazon.com/images/I/81S88mB0O6L._AC_SL1500_.jpg"
+  },
+  {
+    "id": "10",
+    "nome": "La La Land",
+    "genero": "Musical",
+    "foto": "https://m.media-amazon.com/images/I/91jr6S6IHEL._AC_SL1500_.jpg"
+  },
+  {
+    "id": "20",
+    "nome": "Oppenheimer",
+    "genero": "Drama/História",
+    "foto": "https://m.media-amazon.com/images/M/MV5BMDBmYTZjNjUtN2M1Zi00N2MzLTk2NzgtOTM2ZThmNDRhM2UyXkEyXkFqcGdeQXVyMTUzMTg2ODkz._V1_.jpg"
+  }
+]

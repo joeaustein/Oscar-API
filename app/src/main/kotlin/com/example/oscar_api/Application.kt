@@ -1,8 +1,10 @@
 package com.example.oscar_api
 
+import io.ktor.http.*
 import io.ktor.serialization.gson.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
+import io.ktor.server.http.content.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.request.*
@@ -24,8 +26,14 @@ fun Application.module() {
     }
 
     routing {
+        // Servir arquivos estáticos (filme.json e diretor.json)
+        staticResources("/", "static")
+
         post("/auth/login") {
-            val request = call.receive<LoginRequest>()
+            val request = try { call.receive<LoginRequest>() } catch (e: Exception) {
+                call.respond(HttpStatusCode.BadRequest, LoginResponse(success = false, message = "JSON Inválido"))
+                return@post
+            }
             
             DatabaseFactory.getConnection().use { conn ->
                 val stmt = conn.prepareStatement("SELECT id FROM usuarios WHERE login = ? AND senha = ?")
@@ -42,44 +50,47 @@ fun Application.module() {
                     updateStmt.setInt(2, userId)
                     updateStmt.executeUpdate()
                     
-                    call.respond(LoginResponse(success = true, usuarioId = userId, token = token))
+                    call.respond(HttpStatusCode.OK, LoginResponse(success = true, usuarioId = userId, token = token))
                 } else {
-                    call.respond(LoginResponse(success = false, message = "Login ou senha incorretos"))
+                    call.respond(HttpStatusCode.Unauthorized, LoginResponse(success = false, message = "Login ou senha incorretos"))
                 }
             }
         }
 
         post("/voto") {
-            val request = call.receive<VoteRequest>()
+            val request = try { call.receive<VoteRequest>() } catch (e: Exception) {
+                call.respond(HttpStatusCode.BadRequest, VoteResponse(success = false, message = "JSON Inválido"))
+                return@post
+            }
             
             DatabaseFactory.getConnection().use { conn ->
-                // Check if user exists and token matches
+                // Valida usuário e token
                 val userStmt = conn.prepareStatement("SELECT token FROM usuarios WHERE id = ?")
                 userStmt.setInt(1, request.usuarioId)
                 val userRs = userStmt.executeQuery()
                 
                 if (!userRs.next()) {
-                    call.respond(VoteResponse(success = false, message = "Usuário não encontrado"))
+                    call.respond(HttpStatusCode.NotFound, VoteResponse(success = false, message = "Usuário não encontrado"))
                     return@post
                 }
                 
                 val savedToken = userRs.getInt(1)
                 if (savedToken != request.token) {
-                    call.respond(VoteResponse(success = false, message = "Token inválido"))
+                    call.respond(HttpStatusCode.Forbidden, VoteResponse(success = false, message = "Token inválido"))
                     return@post
                 }
                 
-                // Check if already voted
+                // Valida se já votou
                 val voteStmt = conn.prepareStatement("SELECT id FROM votos WHERE usuario_id = ?")
                 voteStmt.setInt(1, request.usuarioId)
                 val voteRs = voteStmt.executeQuery()
                 
                 if (voteRs.next()) {
-                    call.respond(VoteResponse(success = false, message = "Usuário já votou"))
+                    call.respond(HttpStatusCode.Conflict, VoteResponse(success = false, message = "Usuário já votou"))
                     return@post
                 }
                 
-                // Register vote
+                // Registra voto
                 val insertStmt = conn.prepareStatement(
                     "INSERT INTO votos (usuario_id, filme_id, diretor_id, token) VALUES (?, ?, ?, ?)"
                 )
@@ -90,9 +101,9 @@ fun Application.module() {
                 
                 try {
                     insertStmt.executeUpdate()
-                    call.respond(VoteResponse(success = true))
+                    call.respond(HttpStatusCode.Created, VoteResponse(success = true))
                 } catch (e: Exception) {
-                    call.respond(VoteResponse(success = false, message = "Erro ao registrar voto: ${e.message}"))
+                    call.respond(HttpStatusCode.InternalServerError, VoteResponse(success = false, message = "Erro no banco: ${e.message}"))
                 }
             }
         }
