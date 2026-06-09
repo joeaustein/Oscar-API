@@ -29,6 +29,9 @@ object DatabaseFactory {
             )
         """)
 
+        // Indice para performance (Requisito do PDF)
+        statement.execute("CREATE INDEX IF NOT EXISTS idx_usuarios_login ON usuarios(login)")
+
         // Table votos
         statement.execute("""
             CREATE TABLE IF NOT EXISTS votos (

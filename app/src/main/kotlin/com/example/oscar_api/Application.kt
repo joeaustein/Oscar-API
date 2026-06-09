@@ -26,7 +26,7 @@ fun Application.module() {
     }
 
     routing {
-        // Servir arquivos estáticos (filme.json e diretor.json)
+        // Servir arquivos estáticos (filme.json, diretor.json e imagens) na raiz
         staticResources("/", "static")
 
         post("/auth/login") {
@@ -45,12 +45,35 @@ fun Application.module() {
                     val userId = rs.getInt(1)
                     val token = Random.nextInt(0, 101)
                     
+                    // Atualiza o token no banco
                     val updateStmt = conn.prepareStatement("UPDATE usuarios SET token = ? WHERE id = ?")
                     updateStmt.setInt(1, token)
                     updateStmt.setInt(2, userId)
                     updateStmt.executeUpdate()
                     
-                    call.respond(HttpStatusCode.OK, LoginResponse(success = true, usuarioId = userId, token = token))
+                    // Verifica se já possui voto
+                    val voteStmt = conn.prepareStatement("SELECT filme_id, diretor_id FROM votos WHERE usuario_id = ?")
+                    voteStmt.setInt(1, userId)
+                    val voteRs = voteStmt.executeQuery()
+                    
+                    var jaVotou = false
+                    var infoVoto: VoteInfo? = null
+                    
+                    if (voteRs.next()) {
+                        jaVotou = true
+                        infoVoto = VoteInfo(
+                            filmeId = voteRs.getInt("filme_id"),
+                            diretorId = voteRs.getInt("diretor_id")
+                        )
+                    }
+                    
+                    call.respond(HttpStatusCode.OK, LoginResponse(
+                        success = true, 
+                        usuarioId = userId, 
+                        token = token,
+                        jaVotou = jaVotou,
+                        voto = infoVoto
+                    ))
                 } else {
                     call.respond(HttpStatusCode.Unauthorized, LoginResponse(success = false, message = "Login ou senha incorretos"))
                 }
@@ -86,7 +109,7 @@ fun Application.module() {
                 val voteRs = voteStmt.executeQuery()
                 
                 if (voteRs.next()) {
-                    call.respond(HttpStatusCode.Conflict, VoteResponse(success = false, message = "Usuário já votou"))
+                    call.respond(HttpStatusCode.Conflict, VoteResponse(success = false, message = "Usuário já possui um voto registrado"))
                     return@post
                 }
                 
@@ -103,7 +126,7 @@ fun Application.module() {
                     insertStmt.executeUpdate()
                     call.respond(HttpStatusCode.Created, VoteResponse(success = true))
                 } catch (e: Exception) {
-                    call.respond(HttpStatusCode.InternalServerError, VoteResponse(success = false, message = "Erro no banco: ${e.message}"))
+                    call.respond(HttpStatusCode.InternalServerError, VoteResponse(success = false, message = "Erro ao registrar voto: ${e.message}"))
                 }
             }
         }
